@@ -156,28 +156,34 @@ function drawUserType(arr,div){
 	Refractor this code to account for the update and exit sets
 */	
 
-    var update = plot.selectAll('.slice')
+	var group = plot
+		.selectAll('g.group-content')
         .data( pie(tripsByUserType) );
 
-     update.enter()
-     	.append('g')
-     	.attr('class','slice')
+     groupEnter = group.enter()
+     	.append('svg:g')
+     	.attr('class','group-content')
 		.attr('transform','translate('+w/2+','+h/2+')');
 
-	enter.append('path')
-		.attr('d',arc)
-		.style('fill',function(d,i){
-			return i===0?'#03afeb':null;
-		});
+	groupEnter
+		.append('svg:g')
+		.attr('class', 'slice-content')
+		.append('svg:path')
+		// .attr('d',arc)
+		// .style('fill',function(d,i){
+		// 	return i===0?'#03afeb':null;
+		// });
 
-	enter.merge(update)
+	groupEnter
+		// .merge(group)
+		// .select('.slice-content')
 		.select('path')
 		.attr('d',arc)
 		.style('fill',function(d,i){
 			return i===0?'#03afeb':null;
 		});
 
-	update.exit().remove();
+	group.exit().remove();
 
 	// var slices = plot
 	// 	.append('g').attr('class','pie-chart')
