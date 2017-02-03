@@ -16,14 +16,17 @@ d3.queue()
 function dataLoaded(err,trips,stations){
 	//Create crossfilter and dimensions
 	var cf = crossfilter(trips);
-	var tripsByTimeOfDay = cf.dimension(function(d){return d.startTime.getHours() + d.startTime.getMinutes()/60}),
-		tripsByGender = cf.dimension(function(d){return d.userGender}),
-		tripsByUserType = cf.dimension(function(d){return d.userType});
+	var tripsByTimeOfDay 	= cf.dimension(function(d){ return d.startTime.getHours() + d.startTime.getMinutes()/60; }),
+		tripsByGender 		= cf.dimension(function(d){ return d.userGender; }),
+		tripsByUserType 	= cf.dimension(function(d){ return d.userType; });
 
-	drawTimeOfDay(tripsByGender.top(Infinity), plot1);
-	drawUserType(tripsByGender.top(Infinity), plot2);
+	var test = tripsByTimeOfDay.filter(null).top(Infinity);
+
+	drawTimeOfDay(tripsByTimeOfDay.filter(null).top(Infinity), plot1);
+	drawUserType(tripsByUserType.top(Infinity), plot2);
 	drawUserGender(tripsByGender.top(Infinity), plot3);
 }
+
 
 function drawTimeOfDay(arr,div){
 	//calculate w, h; append <svg> and <g> for plot area
@@ -92,7 +95,7 @@ function drawTimeOfDay(arr,div){
 	//Create a brush
 	//Refer to API here: https://github.com/d3/d3-brush
 	var brush = d3.brushX()
-		.on('end',brushend)
+		.on('end',brushend);
 
 	plot.append('g').attr('class','brush')
 		.call(brush);
@@ -107,10 +110,18 @@ function drawTimeOfDay(arr,div){
 		console.log('selected range of the brush (in terms of screen pixels) is ' + d3.event.selection);
 		console.log('selected range of the brush (in terms of time of day) is ' + d3.event.selection.map(scaleX.invert));
 
-/*		Exercise 2 part 1:
-		With the selected range of the brush, update the crossfilter
-		and then update the userType and userGender pie charts
-*/	}
+		// Exercise 2 part 1:
+		// With the selected range of the brush, update the crossfilter
+		// and then update the userType and userGender pie charts
+
+		var range = d3.event.selection.map(scaleX.invert);
+		var newSelection = crossfilter(arr)
+			.dimension(function(d) { return d.startTime.getHours() + d.startTime.getMinutes()/60; })
+			.filterRange(range);
+
+		var selectedArr = newSelection.top(Infinity);
+		drawUserType(selectedArr, plot2);
+	}
 
 }
 
@@ -143,26 +154,51 @@ function drawUserType(arr,div){
 	//Draw
 /*	Exercise 2 part 2: this part of the code does not account for the update and exit sets
 	Refractor this code to account for the update and exit sets
-*/	var slices = plot
-		.append('g').attr('class','pie-chart')
-		.attr('transform','translate('+w/2+','+h/2+')')
-		.selectAll('.slice')
-		.data( pie(tripsByUserType) )
-		.enter()
-		.append('g').attr('class','slice');
-	slices
-		.append('path')
+*/	
+
+    var update = plot.selectAll('.slice')
+        .data( pie(tripsByUserType) );
+
+     update.enter()
+     	.append('g')
+     	.attr('class','slice')
+		.attr('transform','translate('+w/2+','+h/2+')');
+
+	enter.append('path')
 		.attr('d',arc)
 		.style('fill',function(d,i){
-			return i===0?'#03afeb':null
+			return i===0?'#03afeb':null;
 		});
-	slices
-		.append('text')
-		.text(function(d){return d.data.key})
-		.attr('transform',function(d){
-			var angle = (d.startAngle+d.endAngle)*180/Math.PI/2 - 90;
-			return 'rotate('+angle+')translate('+((Math.min(w,h)/2)+20)+')';
+
+	enter.merge(update)
+		.select('path')
+		.attr('d',arc)
+		.style('fill',function(d,i){
+			return i===0?'#03afeb':null;
 		});
+
+	update.exit().remove();
+
+	// var slices = plot
+	// 	.append('g').attr('class','pie-chart')
+	// 	.attr('transform','translate('+w/2+','+h/2+')')
+	// 	.selectAll('.slice')
+	// 	.data( pie(tripsByUserType) )
+	// 	.enter()
+	// 	.append('g').attr('class','slice');
+	// slices
+	// 	.append('path')
+	// 	.attr('d',arc)
+	// 	.style('fill',function(d,i){
+	// 		return i===0?'#03afeb':null;
+	// 	});
+	// slices
+	// 	.append('text')
+	// 	.text(function(d){return d.data.key;})
+	// 	.attr('transform',function(d){
+	// 		var angle = (d.startAngle+d.endAngle)*180/Math.PI/2 - 90;
+	// 		return 'rotate('+angle+')translate('+((Math.min(w,h)/2)+20)+')';
+	// 	});
 }
 
 function drawUserGender(arr,div){
